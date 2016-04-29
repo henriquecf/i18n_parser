@@ -25,7 +25,7 @@ defmodule I18nParser do
     ~r{(where|order)\(".*"\)},
     ~r{(where|order)\('.*'\)},
     ~r{".*(\w_)+.*"},
-    ~r{"[#@!\.\#]+"}
+    ~r{"[#@!\.\#0-9]+"}
   ]
   @doc ~S"""
   Parse a string searching for text to be translated inside erb structures
@@ -55,6 +55,9 @@ defmodule I18nParser do
       iex> I18nParser.parse_erb("<%= title \"A page \ntitle\" %>")
       [%Translatable{original: "A page \ntitle", text: "A page \ntitle", key: "a_page_title", prefix: "", suffix: "", type: "erb"}]
 
+      iex> I18nParser.parse_erb("<%= title \"A page (title) *\" %>")
+      [%Translatable{original: "A page (title) *", text: "A page (title) *", key: "a_page_title", prefix: "", suffix: "", type: "erb"}]
+
       iex> I18nParser.parse_erb("<%= render \"A page \ntitle\" %>")
       []
 
@@ -74,6 +77,9 @@ defmodule I18nParser do
       []
 
       iex> I18nParser.parse_erb("<%= \"wicked_games game\" %>")
+      []
+
+      iex> I18nParser.parse_erb("<%= \"35\" %>")
       []
   """
   def parse_erb(string) do
