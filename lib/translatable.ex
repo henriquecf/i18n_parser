@@ -69,7 +69,11 @@ defmodule Translatable do
   end
 
   def replace_keys(string, translatable = %Translatable{type: "html"}) do
-    Regex.replace(~r{(>[\s\n\,:]*)(#{Regex.escape(translatable.text)})([\s\n\,:]*<)}, string, "\\1<%= t(\".#{translatable.key}\") %>\\3")
+    if String.length(translatable.prefix) > 0 || String.length(translatable.suffix) > 0 do
+      Regex.replace(~r{(>)([^<>\w]*#{Regex.escape(translatable.text)}[^<>\w]*)(<)}m, string, "\\1#{translatable.prefix}<%= t(\".#{translatable.key}\") %>#{translatable.suffix}\\3")
+    else
+      Regex.replace(~r{(>[\s\n\,:]*)(#{Regex.escape(translatable.text)})([\s\n\,:]*<)}, string, "\\1<%= t(\".#{translatable.key}\") %>\\3")
+    end
   end
 
   defp key_from_text(text) do

@@ -15,17 +15,19 @@ defmodule I18nParser do
     ~r{\s*<%(.*?)%>\s*}
   ]
   @erb_patterns [
-    ~r{render\s+["'][#\w\s.]+["']}sm,
-    ~r{class\s*=\s*["']<%(.*?)%>["']}sm,
-    ~r{(class|id|controller|action|novalidate|equalTo|target|disabled):\s*["'(][#().&!='?:\w\s-]*(#\{.*\})*[#().&!='?:\w\s-]*["')]},
-    ~r{:(class|id|controller|action|novalidate|equalTo|target|disabled)\s*=>\s*["'(][#().&!='?:\w\s-]*(#\{.*\})*[#().&!='?:\w\s-]*["')]},
+    ~r{render\s+["'].*["']}sm,
+    ~r{class\s*=\s*["'].*<%(.*?)%>.*["']}sm,
+    ~r{(class|id|controller|action|novalidate|equalTo|target|disabled|name|style):\s*["'(][#().&!='?:;\w\s-]*(#\{.*\})*[#().&!='?:;\w\s-]*["')]},
+    ~r{:(class|id|controller|action|novalidate|equalTo|target|disabled|name|style)\s*=>\s*["'(][#().&!='?:;\w\s-]*(#\{.*\})*[#().&!='?:;\w\s-]*["')]},
     ~r{""},
     ~r{["']\/[\w\/#.@\{\}]+["']},
     ~r{["'][\w\/#.@\{\}]+\/[\w\/#.@\{\}]+["']},
     ~r{(where|order)\(".*"\)},
     ~r{(where|order)\('.*'\)},
-    ~r{".*(\w_)+.*"},
-    ~r{"[#@!\.\#0-9]+"}
+    ~r{"[\w\s]*(\w_)+[\w\s]*"},
+    ~r{"[#@!\.\#0-9]+"},
+    ~r{"\w+\[\w+\]"},
+    ~r{\w+\[:\w+\]\s*==\s*"\w+"}
   ]
   @doc ~S"""
   Parse a string searching for text to be translated inside erb structures
@@ -56,7 +58,7 @@ defmodule I18nParser do
       [%Translatable{original: "A page \ntitle", text: "A page \ntitle", key: "a_page_title", prefix: "", suffix: "", type: "erb"}]
 
       iex> I18nParser.parse_erb("<%= title \"A page (title) *\" %>")
-      [%Translatable{original: "A page (title) *", text: "A page (title) *", key: "a_page_title", prefix: "", suffix: "", type: "erb"}]
+      [%Translatable{original: "A page (title) *", text: "A page (title)", key: "a_page_title", prefix: "", suffix: " *", type: "erb"}]
 
       iex> I18nParser.parse_erb("<%= render \"A page \ntitle\" %>")
       []
@@ -134,6 +136,8 @@ defmodule I18nParser do
     File.open(file_path, [:read, :write], fn(file) ->
       string = IO.read(file, :all)
       translatables = parse_erb(string) ++ parse_html(string)
+      translatables = Enum.uniq(translatables)
+      IO.inspect(translatables)
       new_string = replace_keys(string, translatables)
       File.write(file_path, new_string)
       locale_for(translatables, file_path)
